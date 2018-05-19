@@ -6,6 +6,8 @@ class Manager {
     private $handle;
     private $path;
     private static $instance;
+    const UP = "Up";
+    private $type = array(1 => 'folder', 2 => 'file');
 
     public static function getInstance($start) {
         if (empty(self::$instance)) {
@@ -16,11 +18,11 @@ class Manager {
     }
 
     public function getPath() {
-        return $this->path;
+        return $this->unsetSlash($this->path);
     }
 
-    public function getDir() {
-        return dirname($this->start);
+    private function unsetSlash($path) {
+        return str_replace('//', '/', $path);
     }
 
     public function openDir($path = '.') {
@@ -72,78 +74,49 @@ class Manager {
             }
 
         }
-        if (isset($_GET['sort'])) {
-            switch ($_GET['sort']) {
+        $dirs = $this->getSort($_GET['sort'], $dirs);
+        return $dirs;
+    }
+
+    private function getSort($get, $array) {
+        if ($this->checkGet($get)) {
+            switch ($get) {
                 case 'name_asc':
-                    usort($dirs, function ($a, $b) {
+                    usort($array, function ($a, $b) {
                         return (strcmp($a["res"], $b["res"]));
                     });
                     break;
                 case 'name_desc':
-                    usort($dirs, function ($b, $a) {
+                    usort($array, function ($b, $a) {
                         return (strcmp($a["res"], $b["res"]));
                     });
                     break;
                 case 'type_asc':
-                    usort($dirs, function ($a, $b) {
+                    usort($array, function ($a, $b) {
                         return ($a["type"] - $b["type"]);
                     });
                     break;
 
                 case 'type_desc':
-                    usort($dirs, function ($b, $a) {
+                    usort($array, function ($b, $a) {
                         return ($a["type"]- $b["type"]);
                     });
                     break;
                 case 'size_asc':
-                    usort($dirs, function ($a, $b) {
+                    usort($array, function ($a, $b) {
                         return ($a["size"] - $b["size"]);
                     });
                     break;
 
                 case 'size_desc':
-                    usort($dirs, function ($b, $a) {
+                    usort($array, function ($b, $a) {
                         return ($a["size"]- $b["size"]);
                     });
                     break;
 
             }
         }
-        return $dirs;
-    }
-
-
-
-    public function readDir($path = '.') {
-
-        $this->handle = $this->openDir($path);
-
-        while (false !== ($dir = readdir($this->handle))) {
-
-            if ($this->checkDir($this->path, $dir)) {
-
-                $dirs[]= $dir;
-            }
-
-        }
-
-        return $dirs;
-    }
-
-    public function readFiles($path = '.') {
-
-        $this->handle = $this->openDir($path);
-
-        while (false !== ($dir = readdir($this->handle))) {
-
-            if($this->checkFile($this->path, $dir)){
-
-                $files[]=$dir;
-            }
-
-        }
-
-        return $files;
+        return $array;
     }
 
     private function checkDir($path, $dir) {
@@ -156,7 +129,7 @@ class Manager {
 
     public function getUp() {
         if (!$this->checkEmptyGet($_GET['f'])) {
-            return "<a class='btn btn-info' href='?f=".$this->getUpUrl($_GET['f'])."'>&lt;&lt;НАВЕРХ</a>";
+            return "<a class='btn btn-info' href='?f=".$this->getUpUrl($_GET['f'])."'>".UP."</a>";
         }
     }
 
@@ -172,14 +145,16 @@ class Manager {
         return $path.'/'.$dir;
     }
 
-    public function getSize($file) {
+    private function getSize($file) {
         return filesize($file);
+    }
+
+    public function getType($k) {
+        return $this->type[$k];
     }
 }
 
 $inst = Manager::getInstance('/home/ksu/websites');
-//$catalogues = $inst->readDir('.');
-//$files = $inst->readFiles('.');
 $files = $inst->readCatalog('.');
 $up = $inst->getUp();
 
